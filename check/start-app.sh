@@ -39,3 +39,12 @@ grep -q 'Medusa Sweatshirt' /tmp/product.html || { echo "product title missing";
 echo "--- screenshot"
 npx -y -p @playwright/mcp@0.0.83 playwright screenshot --viewport-size=1280,800 --wait-for-timeout=3000 \
   http://localhost:8000/dk/store /work/store.png && test -s /work/store.png && ls -l /work/store.png
+
+echo "--- stop"
+ps -eo pid,args | grep -E "medusa|next" | grep -v grep | cut -c1-110
+pkill -f "medusa develop"; pkill -f "medusa start"; pkill -f next-server; pkill -f "next dev"
+sleep 3
+echo "left after pkill:"; ps -eo pid,args | grep -E "medusa|next" | grep -v grep | cut -c1-110
+curl -fs -o /dev/null http://localhost:9000/health && { echo "backend still up"; exit 1; }
+curl -fs -o /dev/null http://localhost:8000/dk && { echo "storefront still up"; exit 1; }
+echo "both stopped"

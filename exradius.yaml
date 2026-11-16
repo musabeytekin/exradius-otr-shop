@@ -62,7 +62,49 @@ network:
     - registry.npmjs.org
 
 notes: |
-  TODO
+  AGENTS.md at the root of otr-shop is the team's guide (directory map, Medusa conventions,
+  off-limits paths); follow it. The package manager is npm (packageManager npm@11.17.0):
+  never create another lockfile. Install dependencies inside the app that needs them
+  (`cd apps/backend && npm install <pkg>`); registry.npmjs.org is reachable. Medusa
+  packages ship an AGENTS.md under node_modules/@medusajs/<pkg>/ for the installed
+  version; read it before using an API. The Medusa skills and docs MCP server the guide
+  mentions are not available here.
+
+  Checks, from /work/otr-shop:
+  - Backend lint: `cd apps/backend && npm run lint` (medusa lint; passes on main).
+  - Storefront lint: one folder or file, `cd apps/storefront && npx eslint src/modules/products`.
+    The full `npx eslint .` (and so the root `npm run lint`) already fails on main with
+    10 errors in src/lib/data/cart.ts and src/modules/layout/components/language-select;
+    do not count those against your change, and do not fix them unless the ticket asks.
+  - Backend build: `cd apps/backend && npm run build` (about 15 s, compiles the server
+    and the admin dashboard).
+  - Tests: there are no test files yet. The suites are `npm run test:unit`,
+    `test:integration:modules` and `test:integration:http` in apps/backend (Jest, run
+    in band); add `--passWithNoTests` or the empty suite exits 1. One file:
+    `npm run test:unit -- <path>`. Integration suites would run against the postgres service (none exist, so this is unproven).
+  - There is no CI and no storefront test suite.
+
+  Database: setup migrated and seeded the development database (otr_shop on the postgres
+  service: one region Europe with dk, de, gb, se, fr, es, it, four demo products) and
+  created the admin user admin@test.com / supersecret. `psql "$DATABASE_URL"` works.
+  After changing a custom module's model run `npx medusa db:generate <module>` then
+  `npx medusa db:migrate` in apps/backend; never edit an existing migration.
+  DATABASE_URL must keep localhost as its host: Medusa turns SSL on for any other host,
+  and the connection then times out.
+
+  Running the app (to reproduce a bug or see a change; the checks do not need it):
+  `cd apps/backend && npm run dev > /tmp/backend.log 2>&1 &`, wait until
+  http://localhost:9000/health answers (seconds). Admin dashboard at
+  http://localhost:9000/app (admin@test.com / supersecret); store API calls need the
+  header `x-publishable-api-key`, whose value setup wrote to apps/storefront/.env.local;
+  an admin token comes from `POST /auth/user/emailpass` with that login. Then
+  `cd apps/storefront && npm run dev > /tmp/storefront.log 2>&1 &`: the storefront is on
+  http://localhost:8000/dk (pages compile on first request, a few seconds), the shop at
+  /dk/store, a product at /dk/products/sweatshirt. Look at pages with the browser tool
+  on those URLs. Stop both with `pkill -f "medusa develop"; pkill -f "next dev"`.
+
+  Delivery: one pull request against main per ticket. Commit messages and code have no
+  emojis; code style is in AGENTS.md (no semicolons, double quotes, kebab-case files).
 
 connections:
   github:
@@ -77,8 +119,33 @@ agents:
     name: Developer
     connections: [github, playwright]
     role: |
-      TODO
+      You take tickets that ask for a change to the code: bug fixes, features, refactors,
+      dependency updates, in the Medusa backend, its admin dashboard or the Next.js
+      storefront. Keep the change small and follow AGENTS.md and the conventions you find.
+      Before you finish, run the checks the notes give for what you touched (the backend
+      lint for backend code, the storefront lint on the files you changed, the backend
+      build when you changed backend or admin code, the tests that cover it), and say in
+      your result which you ran and what they showed; if one could not run, say why.
+      When the change can be seen in the running application (a storefront or admin
+      page looks or behaves differently, a store or admin API endpoint answers
+      differently), the tests are not the whole proof: start the application as the
+      notes say and look at your change there the way the person who asked would. Open
+      the page with the browser tool, do what the ticket describes, and take a screenshot
+      of the state that shows it works (for a bug: of what was wrong, now right). Save
+      each screenshot under a file name of its own in the project directory, not inside
+      a repository, so that no commit picks it up. Attach the screenshots to your result
+      and say in a line each what they show. For an endpoint, quote the request and the
+      response instead. A change nothing in the running application shows (a refactor, a
+      dependency update, tests, documentation) needs none of this: say that the checks
+      are its proof. If you could not start the application or reach your change in it,
+      say what stopped you; never describe as seen what you did not see.
+      After pushing, open a pull request against main with the GitHub tool and link it in
+      your result.
   scout:
     name: Scout
     role: |
-      TODO
+      You take tickets that ask a question about the code or the store's behaviour: where
+      something is, why something happens, what a change would affect. You investigate
+      and report findings with file paths and evidence; you may start the application or
+      query the development database to answer. You never change code, push or open pull
+      requests.
