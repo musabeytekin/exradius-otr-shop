@@ -24,14 +24,14 @@ TOKEN=$(curl -fsS -X POST -H 'content-type: application/json' \
 test -n "$TOKEN" || { echo "admin login failed"; tail -n 60 /tmp/backend.log; exit 1; }
 curl -fsS -H "authorization: Bearer $TOKEN" "http://localhost:9000/admin/users/me?fields=email" | head -c 200; echo
 
-(cd apps/storefront && npm run dev > /tmp/homefront.log 2>&1 &)
+(cd apps/storefront && npm run dev > /tmp/storefront.log 2>&1 &)
 for i in $(seq 1 120); do
   curl -fs -o /dev/null http://localhost:8000/dk && break
   sleep 2
 done
 echo "--- storefront /dk"
 if ! curl -fsS http://localhost:8000/dk -o /tmp/home.html; then
-  echo "--- storefront log"; tail -n 60 /tmp/homefront.log; exit 1
+  echo "--- storefront log"; tail -n 60 /tmp/storefront.log; exit 1
 fi
 grep -o '<title>[^<]*</title>' /tmp/home.html
 grep -c 'href="/dk/products/' /tmp/home.html | sed 's/^/product links: /'
