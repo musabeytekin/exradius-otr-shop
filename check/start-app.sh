@@ -24,18 +24,18 @@ TOKEN=$(curl -fsS -X POST -H 'content-type: application/json' \
 test -n "$TOKEN" || { echo "admin login failed"; tail -n 60 /tmp/backend.log; exit 1; }
 curl -fsS -H "authorization: Bearer $TOKEN" "http://localhost:9000/admin/users/me?fields=email" | head -c 200; echo
 
-(cd apps/storefront && npm run dev > /tmp/storefront.log 2>&1 &)
+(cd apps/storefront && npm run dev > /tmp/homefront.log 2>&1 &)
 for i in $(seq 1 120); do
   curl -fs -o /dev/null http://localhost:8000/dk && break
   sleep 2
 done
-echo "--- storefront /dk/store"
-if ! curl -fsS http://localhost:8000/dk/store -o /tmp/store.html; then
-  echo "--- storefront log"; tail -n 60 /tmp/storefront.log; exit 1
+echo "--- storefront /dk"
+if ! curl -fsS http://localhost:8000/dk -o /tmp/home.html; then
+  echo "--- storefront log"; tail -n 60 /tmp/homefront.log; exit 1
 fi
-grep -o '<title>[^<]*</title>' /tmp/store.html
-grep -c 'href="/dk/products/' /tmp/store.html | sed 's/^/product links: /'
+grep -o '<title>[^<]*</title>' /tmp/home.html
+grep -c 'href="/dk/products/' /tmp/home.html | sed 's/^/product links: /'
 
 echo "--- screenshot"
 npx -y -p @playwright/mcp@0.0.83 playwright screenshot --viewport-size=1280,800 \
-  http://localhost:8000/dk/store /tmp/store.png && test -s /tmp/store.png && ls -l /tmp/store.png
+  http://localhost:8000/dk /tmp/home.png && test -s /tmp/home.png && ls -l /tmp/home.png
