@@ -44,7 +44,8 @@ services:
       command: [pg_isready, -h, 127.0.0.1, -U, medusa, -d, otr_shop]
 
 env:
-  DATABASE_URL: postgres://medusa:medusa@postgres:5432/otr_shop
+  # localhost, not the service name: Medusa turns SSL on for any other database host.
+  DATABASE_URL: postgres://medusa:medusa@localhost:5432/otr_shop
   DB_NAME: otr_shop
   STORE_CORS: http://localhost:8000
   ADMIN_CORS: http://localhost:5173,http://localhost:9000
