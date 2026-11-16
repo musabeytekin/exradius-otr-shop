@@ -10,18 +10,16 @@ pushed to `main`.
 | Config repository | https://github.com/musabeytekin/exradius-otr-shop |
 | Branch | `main` |
 | Config file | `exradius.yaml` |
-| Visibility | private: Exradius needs a read credential for `github.com` (Settings, config repository access) |
-| Code repository | https://github.com/musabeytekin/otr-shop (`main`, private) |
+| Visibility | public: no credential needed to read it |
+| Code repository | https://github.com/musabeytekin/otr-shop (`main`, public) |
 | Project slug | `otr-shop` |
 | Secret store | `otr-shop` |
 
 ## Add the project
 
-1. In Settings, "Config repository access", add a credential for `github.com` that can
-   read this repository (a fine-grained token with Contents: read on it).
-2. Projects, Add: paste `https://github.com/musabeytekin/exradius-otr-shop`.
-3. Stores: create `otr-shop`, allow project `otr-shop` to use it, and fill the key below.
-4. Open the project's Verify tab: it runs by itself and every step should pass. The local
+1. Projects, Add: paste `https://github.com/musabeytekin/exradius-otr-shop`.
+2. Stores: create `otr-shop`, allow project `otr-shop` to use it, and fill the key below.
+3. Open the project's Verify tab: it runs by itself and every step should pass. The local
    check passed on 2026-11-16 for `linux/arm64`, with these commands run as the agent
    would: `npm run lint` (backend), `npx eslint src/modules/products` (storefront),
    `npm run test:unit -- --passWithNoTests`, `npm run build` (backend),
@@ -40,7 +38,7 @@ pushed to `main`.
 
 | Key | Format | Where to get it | Used for |
 |---|---|---|---|
-| `GITHUB_TOKEN` | GitHub fine-grained personal access token, `github_pat_...` | github.com, Settings, Developer settings, Fine-grained tokens: resource owner `musabeytekin`, repository `otr-shop` only, permissions Contents: read and write, Pull requests: read and write, Metadata: read | cloning and pushing `otr-shop`; the `github` connection (opening pull requests) |
+| `GITHUB_TOKEN` | GitHub fine-grained personal access token, `github_pat_...` | github.com, Settings, Developer settings, Fine-grained tokens: resource owner `musabeytekin`, repository `otr-shop` only, permissions Contents: read and write, Pull requests: read and write, Metadata: read | pushing to `otr-shop` (the repository is public; cloning needs no token); the `github` connection (opening pull requests) |
 
 The panel accepts a pasted `.env` block:
 
@@ -64,9 +62,10 @@ in `exradius.yaml`: the database exists only inside a run.
   `main`; screenshots of visible changes), `scout` (investigates and reports, never
   changes code).
 - Network: besides its model, the repository and its connections, an agent reaches
-  `registry.npmjs.org` (adding or updating npm dependencies). Setup reaches any public
-  host. A refused host shows on the task page's Network tab. The demo products' images
-  (`medusa-public-images.s3.eu-west-1.amazonaws.com`) are deliberately not on the list.
+  `registry.npmjs.org` (adding or updating npm dependencies) and
+  `medusa-public-images.s3.eu-west-1.amazonaws.com` (the demo products' images, so pages
+  and screenshots show them). Setup reaches any public host. A refused host shows on the
+  task page's Network tab.
 - Resources: `resources.memory` is `7g`: each run needs a cluster node with that much
   memory free (it waits as "waiting for cluster capacity" until one has), and the
   workstation is killed if it goes over it (measured: `npm ci` 2.6 GiB, the backend

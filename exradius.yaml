@@ -60,6 +60,8 @@ env:
 network:
   allow:
     - registry.npmjs.org
+    # the seeded demo products' images, so pages and screenshots show them
+    - medusa-public-images.s3.eu-west-1.amazonaws.com
 
 notes: |
   AGENTS.md at the root of otr-shop is the team's guide (directory map, Medusa conventions,
