@@ -101,7 +101,11 @@ notes: |
   `cd apps/storefront && npm run dev > /tmp/storefront.log 2>&1 &`: the storefront is on
   http://localhost:8000/dk (pages compile on first request, a few seconds), the shop at
   /dk/store, a product at /dk/products/sweatshirt. Look at pages with the browser tool
-  on those URLs. Stop both with `pkill -f "medusa develop"; pkill -f "next dev"`.
+  on those URLs.
+  Product images are on medusa-public-images.s3.eu-west-1.amazonaws.com, which is not
+  reachable here: pages show empty image frames, which is not a bug to fix. Stop both with
+  `pkill -f "medusa develop|cli.js start|next dev|next-server"` (each dev command
+  leaves a child server behind when only its parent is killed).
 
   Delivery: one pull request against main per ticket. Commit messages and code have no
   emojis; code style is in AGENTS.md (no semicolons, double quotes, kebab-case files).

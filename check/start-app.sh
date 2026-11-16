@@ -41,8 +41,7 @@ npx -y -p @playwright/mcp@0.0.83 playwright screenshot --viewport-size=1280,800 
   http://localhost:8000/dk/store /work/store.png && test -s /work/store.png && ls -l /work/store.png
 
 echo "--- stop"
-ps -eo pid,args | grep -E "medusa|next" | grep -v grep | cut -c1-110
-pkill -f "medusa develop"; pkill -f "medusa start"; pkill -f next-server; pkill -f "next dev"
+pkill -f "medusa develop|cli.js start|next dev|next-server"
 sleep 3
 echo "left after pkill:"; ps -eo pid,args | grep -E "medusa|next" | grep -v grep | cut -c1-110
 curl -fs -o /dev/null http://localhost:9000/health && { echo "backend still up"; exit 1; }
