@@ -1,0 +1,4 @@
+# Serves this project to the GitHub issues bridge (exradius-github): its repositories get
+# one "agent: <name>" label per agent, and that label on an issue starts a task. The bridge
+# has no settings of its own yet.
+{}
