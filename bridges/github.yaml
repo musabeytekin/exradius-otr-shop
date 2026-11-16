@@ -1,4 +1,3 @@
-# Serves this project to the GitHub issues bridge (exradius-github): its repositories get
-# one "agent: <name>" label per agent, and that label on an issue starts a task. The bridge
-# has no settings of its own yet.
-{}
+# Serves this project to the GitHub issues bridge (exradius-github): an issue in one of these
+# repositories that is assigned to the bot account becomes a task for this project.
+repositories: [musabeytekin/otr-shop]
