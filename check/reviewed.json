@@ -2,7 +2,7 @@
   "repositories": {
     "otr-shop": {
       "branch": "main",
-      "commit": "7c1f0c09690412bba568230bb2e5503a3e93d942"
+      "commit": "c063196f9487072f566f1066787ef1d491704a2a"
     }
   },
   "skill": "0.7.0"
