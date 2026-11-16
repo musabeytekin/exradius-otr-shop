@@ -29,13 +29,13 @@ for i in $(seq 1 120); do
   curl -fs -o /dev/null http://localhost:8000/dk && break
   sleep 2
 done
-echo "--- storefront /dk"
-if ! curl -fsS http://localhost:8000/dk -o /tmp/home.html; then
+echo "--- storefront product page"
+if ! curl -fsS http://localhost:8000/dk/products/sweatshirt -o /tmp/product.html; then
   echo "--- storefront log"; tail -n 60 /tmp/storefront.log; exit 1
 fi
-grep -o '<title>[^<]*</title>' /tmp/home.html
-grep -c 'href="/dk/products/' /tmp/home.html | sed 's/^/product links: /'
+grep -o '<title>[^<]*</title>' /tmp/product.html
+grep -q 'Medusa Sweatshirt' /tmp/product.html || { echo "product title missing"; exit 1; }
 
 echo "--- screenshot"
-npx -y -p @playwright/mcp@0.0.83 playwright screenshot --viewport-size=1280,800 \
-  http://localhost:8000/dk /tmp/home.png && test -s /tmp/home.png && ls -l /tmp/home.png
+npx -y -p @playwright/mcp@0.0.83 playwright screenshot --viewport-size=1280,800 --wait-for-timeout=3000 \
+  http://localhost:8000/dk/store /work/store.png && test -s /work/store.png && ls -l /work/store.png
