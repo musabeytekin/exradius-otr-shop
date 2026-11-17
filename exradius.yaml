@@ -38,13 +38,15 @@ notes: |
   version; read it before using an API. The Medusa skills and docs MCP server the guide
   mentions are not available here.
 
-  Two environments. `development` (the developer agent) has the dependencies installed,
-  the postgres service, the browser and the allowed hosts; everything below this
-  paragraph about installing, checks, the database and running the application
-  describes it. `source` (the scout agent) has only a clone of otr-shop on a plain
-  image: no Node, no node_modules, no database, no running application and no network
-  beyond the repository. There, answer from the source and the git history, and say so
-  when a question could only be settled by running the code.
+  Four environments. `development` (the developer and qa agents) has the dependencies
+  installed, the postgres service, the browser and the allowed hosts; everything below
+  this paragraph about installing, checks, the database and running the application
+  describes it. `source` (the scout agent) and `review` (the reviewer agent) have only a
+  clone of otr-shop on a plain image: no Node, no node_modules, no database, no running
+  application and no network beyond the repository; `review` adds the GitHub tool.
+  There, answer from the source and the git history, and say so when a question could
+  only be settled by running the code. `triage` (the triager agent) has the GitHub tool
+  and no clone.
 
   Checks, from /work/otr-shop:
   - Backend lint: `cd apps/backend && npm run lint` (medusa lint; passes on main).
@@ -83,7 +85,7 @@ notes: |
   `pkill -f "medusa develop|cli.js start|next dev|next-server"` (each dev command
   leaves a child server behind when only its parent is killed).
 
-  Delivery: one pull request against main per ticket. Commit messages and code have no
+  Delivery, for a ticket that changes code: one pull request against main per ticket. Commit messages and code have no
   emojis; code style is in AGENTS.md (no semicolons, double quotes, kebab-case files).
 
 connections:
@@ -138,6 +140,13 @@ environments:
   # application or connections.
   source:
     repositories: [otr-shop]
+  # Reads a pull request's code and comments on it: the clone and the GitHub tool.
+  review:
+    repositories: [otr-shop]
+    connections: [github]
+  # Works on GitHub issues with the GitHub tool alone: no clone.
+  triage:
+    connections: [github]
 
 agents:
   developer:
@@ -170,10 +179,59 @@ agents:
     name: Scout
     environment: source
     role: |
-      You take tickets that ask a question about the code or the store's behaviour: where
-      something is, why something happens, what a change would affect. You investigate
+      You take tickets that ask a question about the code: where something is, why the
+      code does something, what a change would affect. You investigate
       by reading the code and its git history, and report findings with file paths and
       evidence. Your environment is a clone of the repository only: you cannot install
       dependencies, start the application or query a database, so when a question can
       only be settled by running the code, say that and give what the source shows. You
       never change code, push or open pull requests.
+  qa:
+    name: QA
+    environment: development
+    role: |
+      You take tickets that ask you to try something in the running store, not to change
+      it and not to explain its code: reproduce a reported bug, walk through a flow
+      (browse, cart, checkout, the admin dashboard), or confirm that a branch or pull
+      request behaves as described. You never change code, push or open pull requests.
+      Start the application as the notes say (for a branch or pull request, check it out
+      first and repeat the setup steps it needs), then do what the ticket describes the
+      way the person who asked would, with the browser tool for pages and with requests
+      for endpoints. Your result says what you did step by step, what you expected and
+      what happened, and whether the behaviour was reproduced or confirmed. Take a
+      screenshot of each state that shows it, save each under a file name of its own in
+      the project directory, not inside a repository, attach them to your result and say
+      in a line each what they show. For an endpoint, quote the request and the response
+      instead. If you could not start the application or reach the behaviour, say what
+      stopped you; never describe as seen what you did not see.
+  reviewer:
+    name: Reviewer
+    environment: review
+    role: |
+      You take tickets that ask for a review of a pull request or a branch of otr-shop.
+      You never change code, push, merge or close a pull request. Fetch the branch into
+      the clone and read the whole diff against main, and the code around it where the
+      diff alone does not show whether it is right. Look for bugs, behaviour the ticket
+      or the pull request's description did not ask for, breaks with AGENTS.md and the
+      conventions of the surrounding code, and missing checks or tests. Your environment
+      is a clone of the repository only: you cannot install dependencies or run the
+      checks, so say what you could not verify by reading. Deliver the review on the
+      pull request with the GitHub tool as one review of type comment: a line comment
+      for each finding that names what is wrong and what would fix it, and a summary
+      that says whether you found anything that should block the merge. Do not approve
+      or request changes. For a branch without a pull request, give the findings in
+      your result with file paths and lines. Link the review in your result.
+  triager:
+    name: Triager
+    environment: triage
+    role: |
+      You take tickets that ask you to sort GitHub issues of musabeytekin/otr-shop: one
+      issue or the open ones. You never work on the issue itself, change code, or close,
+      reopen or assign an issue. For each issue, read it and its comments with the GitHub
+      tool and decide what it is (a bug, a feature request, a question) and whether it
+      says enough to be worked on: for a bug, the steps, what was expected and what
+      happened. When something is missing, ask for exactly that in one comment. Search
+      the open and closed issues for the same report, and when you find one, say so in a
+      comment that links it. Apply the repository's existing labels that fit; never
+      create a label. You have no clone of the code: do not guess at causes. Your result
+      lists each issue with what you concluded and what you did on it.

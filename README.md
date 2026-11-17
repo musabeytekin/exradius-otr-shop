@@ -20,7 +20,7 @@ pushed to `main`.
 1. Projects, Add: paste `https://github.com/musabeytekin/exradius-otr-shop`.
 2. Stores: create `otr-shop`, allow project `otr-shop` to use it, and fill the key below.
 3. Open the project's Verify tab: it runs by itself, checks each environment in turn
-   (`development`, then `source`), and every step should pass. After a change to this
+   (`development`, `source`, `review`, `triage`), and every step should pass. After a change to this
    repository reaches `main`, press Reread and then Verify. The local check passed on
    2026-11-17 for `linux/arm64`, one environment at a time:
    - `development`, with these commands run as the agent would: `npm run lint`
@@ -30,6 +30,9 @@ pushed to `main`.
      `check/start-app.sh` (backend, admin login, storefront, a Chromium screenshot).
    - `source`: the clone on the default image, read with `git log` and `grep`; no Node
      on the PATH and no host reached.
+   - `review`: the clone on the default image, read with `git`; the `github` connection
+     needs nothing in the image.
+   - `triage`: the default image with an empty project directory.
 
    Not proven locally: the storefront's full lint (it fails on `main` with 10 errors in
    the code), the integration test suites (there are no tests yet), and what no local
@@ -49,7 +52,7 @@ pushed to `main`.
 
 | Key | Format | Where to get it | Used for |
 |---|---|---|---|
-| `GITHUB_TOKEN` | GitHub fine-grained personal access token, `github_pat_...` | github.com, Settings, Developer settings, Fine-grained tokens: resource owner `musabeytekin`, repository `otr-shop` only, permissions Contents: read and write, Pull requests: read and write, Metadata: read | pushing to `otr-shop` (the repository is public; cloning needs no token); the `github` connection (opening pull requests) |
+| `GITHUB_TOKEN` | GitHub fine-grained personal access token, `github_pat_...` | github.com, Settings, Developer settings, Fine-grained tokens: resource owner `musabeytekin`, repository `otr-shop` only, permissions Contents: read and write, Pull requests: read and write, Issues: read and write (for the `triager` agent; without it that agent can read issues only), Metadata: read | pushing to `otr-shop` (the repository is public; cloning needs no token); the `github` connection (opening pull requests, reviewing them, and, once the token has Issues: read and write, commenting on and labelling issues) |
 
 The panel accepts a pasted `.env` block:
 
@@ -70,7 +73,8 @@ environment, and a run gets only what that environment selects.
 ### Environment `development`
 
 - Used by: `developer` (code changes; pushes a branch and opens a pull request against
-  `main`; screenshots of visible changes).
+  `main`; screenshots of visible changes) and `qa` (tries behaviour in the running
+  store, reproduces bugs and reports with screenshots; never changes code).
 - Workstation: `development`, built from `docker/workstation.Dockerfile`: Node 24
   (Debian bookworm), npm 11.17.0, the Postgres client, Chromium's system libraries.
 - Repositories: `otr-shop` (`main`, push allowed).
@@ -116,12 +120,38 @@ environment, and a run gets only what that environment selects.
   (measured: 7 MiB for the commands, 9 MB of disk; the agent's own memory is not
   measured locally).
 
+### Environment `review`
+
+- Used by: `reviewer` (reads a pull request's diff in the clone and leaves one comment
+  review on it; never changes code, approves or merges).
+- Workstation: Exradius's default image.
+- Repositories: `otr-shop` (`main`), the shared definition as in `source`.
+- Connections: `github` (reading the pull request and posting the review). It is the
+  same connection and token the developer uses, so reviews appear under the same GitHub
+  account as the pull requests, which is why they are comment reviews: GitHub refuses
+  an approval of one's own pull request.
+- Services, setup, caches: none. Network: besides its model, the repository and the
+  connection, nothing. Resources: the install's default.
+
+### Environment `triage`
+
+- Used by: `triager` (reads GitHub issues of `musabeytekin/otr-shop`, asks for missing
+  information, links duplicates, applies existing labels; never closes or assigns).
+- Workstation: Exradius's default image.
+- Repositories: none. Services, setup, caches: none.
+- Connections: `github` (issues).
+- Network: besides its model and the connection, nothing. Resources: the install's
+  default.
+
+A task that names no agent is given to one of the five by Exradius's agent routing,
+which reads each agent's name, role and tools; routing must be set up in the install.
+
 ## Maintaining it
 
 Edit `exradius.yaml` or the Dockerfile and push to `main`. Before pushing, the developers
 check it locally with the `exradius-project` Claude Code skill, whose `check.sh` runs the
 same steps as Verify with Docker: `check.sh --validate` for the whole file, then
-`check.sh --environment development` and `check.sh --environment source`, one at a time.
+`check.sh --environment <name>` for `development`, `source`, `review` and `triage`, one at a time.
 `check/start-app.sh` is the script that proved the application starts in `development`;
 `check/reviewed.json` records the code commit the config was checked against. After the
 push, press Reread and then Verify on the project in Exradius.
