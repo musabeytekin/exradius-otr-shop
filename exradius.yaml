@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 project:
   slug: otr-shop
@@ -7,9 +7,6 @@ project:
 
 secret_store: otr-shop
 
-resources:
-  memory: 7g
-
 repositories:
   - name: otr-shop
     url: https://github.com/musabeytekin/otr-shop.git
@@ -17,20 +14,9 @@ repositories:
     credential: "${secret:GITHUB_TOKEN}"
     push: true
 
-workstation:
-  dockerfile: docker/workstation.Dockerfile
-  setup:
-    - cd otr-shop && npm ci
-    - cd otr-shop/apps/backend && npx medusa db:migrate
-    - cd otr-shop/apps/backend && npx medusa user -e admin@test.com -p supersecret
-    - >-
-      cd otr-shop/apps/storefront &&
-      KEY=$(psql "$DATABASE_URL" -Atc "select token from api_key where type = 'publishable' and revoked_at is null order by created_at limit 1") &&
-      test -n "$KEY" && echo "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$KEY" > .env.local
-    - npx -y @playwright/mcp@0.0.83 install-browser chromium
-  cache:
-    - ~/.npm
-    - ~/.cache/ms-playwright
+workstations:
+  development:
+    dockerfile: docker/workstation.Dockerfile
 
 services:
   postgres:
@@ -43,26 +29,6 @@ services:
     ready:
       command: [pg_isready, -h, 127.0.0.1, -U, medusa, -d, otr_shop]
 
-env:
-  # localhost, not the service name: Medusa turns SSL on for any other database host.
-  DATABASE_URL: postgres://medusa:medusa@localhost:5432/otr_shop
-  DB_NAME: otr_shop
-  STORE_CORS: http://localhost:8000
-  ADMIN_CORS: http://localhost:5173,http://localhost:9000
-  AUTH_CORS: http://localhost:5173,http://localhost:9000
-  JWT_SECRET: supersecret
-  COOKIE_SECRET: supersecret
-  NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
-  MEDUSA_DISABLE_TELEMETRY: "true"
-  TURBO_TELEMETRY_DISABLED: "1"
-  NEXT_TELEMETRY_DISABLED: "1"
-
-network:
-  allow:
-    - registry.npmjs.org
-    # the seeded demo products' images, so pages and screenshots show them
-    - medusa-public-images.s3.eu-west-1.amazonaws.com
-
 notes: |
   AGENTS.md at the root of otr-shop is the team's guide (directory map, Medusa conventions,
   off-limits paths); follow it. The package manager is npm (packageManager npm@11.17.0):
@@ -71,6 +37,14 @@ notes: |
   packages ship an AGENTS.md under node_modules/@medusajs/<pkg>/ for the installed
   version; read it before using an API. The Medusa skills and docs MCP server the guide
   mentions are not available here.
+
+  Two environments. `development` (the developer agent) has the dependencies installed,
+  the postgres service, the browser and the allowed hosts; everything below this
+  paragraph about installing, checks, the database and running the application
+  describes it. `source` (the scout agent) has only a clone of otr-shop on a plain
+  image: no Node, no node_modules, no database, no running application and no network
+  beyond the repository. There, answer from the source and the git history, and say so
+  when a question could only be settled by running the code.
 
   Checks, from /work/otr-shop:
   - Backend lint: `cd apps/backend && npm run lint` (medusa lint; passes on main).
@@ -104,8 +78,8 @@ notes: |
   http://localhost:8000/dk (pages compile on first request, a few seconds), the shop at
   /dk/store, a product at /dk/products/sweatshirt. Look at pages with the browser tool
   on those URLs.
-  Product images are on medusa-public-images.s3.eu-west-1.amazonaws.com, which is not
-  reachable here: pages show empty image frames, which is not a bug to fix. Stop both with
+  Product images are on medusa-public-images.s3.eu-west-1.amazonaws.com, which is
+  reachable, so pages and screenshots show them. Stop both with
   `pkill -f "medusa develop|cli.js start|next dev|next-server"` (each dev command
   leaves a child server behind when only its parent is killed).
 
@@ -120,10 +94,55 @@ connections:
   playwright:
     catalog: playwright
 
+environments:
+  # Develops, checks and runs the application: the clone with its dependencies installed,
+  # a migrated and seeded database, a browser for the playwright connection.
+  development:
+    repositories: [otr-shop]
+    workstation: development
+    services: [postgres]
+    connections: [github, playwright]
+    setup:
+      - cd otr-shop && npm ci
+      - cd otr-shop/apps/backend && npx medusa db:migrate
+      - cd otr-shop/apps/backend && npx medusa user -e admin@test.com -p supersecret
+      - >-
+        cd otr-shop/apps/storefront &&
+        KEY=$(psql "$DATABASE_URL" -Atc "select token from api_key where type = 'publishable' and revoked_at is null order by created_at limit 1") &&
+        test -n "$KEY" && echo "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$KEY" > .env.local
+      - npx -y @playwright/mcp@0.0.83 install-browser chromium
+    cache:
+      - ~/.npm
+      - ~/.cache/ms-playwright
+    resources:
+      memory: 7g
+    env:
+      # localhost, not the service name: Medusa turns SSL on for any other database host.
+      DATABASE_URL: postgres://medusa:medusa@localhost:5432/otr_shop
+      DB_NAME: otr_shop
+      STORE_CORS: http://localhost:8000
+      ADMIN_CORS: http://localhost:5173,http://localhost:9000
+      AUTH_CORS: http://localhost:5173,http://localhost:9000
+      JWT_SECRET: supersecret
+      COOKIE_SECRET: supersecret
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+      MEDUSA_DISABLE_TELEMETRY: "true"
+      TURBO_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    network:
+      allow:
+        - registry.npmjs.org
+        # the seeded demo products' images, so pages and screenshots show them
+        - medusa-public-images.s3.eu-west-1.amazonaws.com
+  # Reads the source: a clone on the install's default image. No dependencies, database,
+  # application or connections.
+  source:
+    repositories: [otr-shop]
+
 agents:
   developer:
     name: Developer
-    connections: [github, playwright]
+    environment: development
     role: |
       You take tickets that ask for a change to the code: bug fixes, features, refactors,
       dependency updates, in the Medusa backend, its admin dashboard or the Next.js
@@ -149,9 +168,12 @@ agents:
       your result.
   scout:
     name: Scout
+    environment: source
     role: |
       You take tickets that ask a question about the code or the store's behaviour: where
       something is, why something happens, what a change would affect. You investigate
-      and report findings with file paths and evidence; you may start the application or
-      query the development database to answer. You never change code, push or open pull
-      requests.
+      by reading the code and its git history, and report findings with file paths and
+      evidence. Your environment is a clone of the repository only: you cannot install
+      dependencies, start the application or query a database, so when a question can
+      only be settled by running the code, say that and give what the source shows. You
+      never change code, push or open pull requests.

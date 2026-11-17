@@ -1,4 +1,5 @@
-# Developer image for otr-shop: what an engineer on the project has installed.
+# workstations.development in exradius.yaml, selected by the development environment:
+# what an engineer on the project has installed. The source environment does not use it.
 # Node 24 LTS (README; engines >=22.23.4) with the exact npm of packageManager (npm@11.17.0),
 # the Postgres client (setup reads the seeded publishable key; agents inspect the database),
 # and Chromium's system libraries for the playwright connection (the browser itself is

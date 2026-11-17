@@ -1,4 +1,5 @@
 #!/bin/bash
+# For the development environment (check.sh --environment development --run-file ...).
 # What notes tell the agent, run once: start the backend and the storefront, prove they
 # answer with seeded data, log in to the admin API, and take a screenshot with the browser
 # the playwright connection uses.
